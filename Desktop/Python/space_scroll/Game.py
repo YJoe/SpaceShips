@@ -161,7 +161,7 @@ class Game:
 
     def random_event_package(self, speed, pos):
         # random chance that package will be created
-        if random.randint(1, package_change) == 1:
+        if random.randint(1, package_chance) == 1:
             p = Package(speed, pos)
             self.package_list.append(p)
 
