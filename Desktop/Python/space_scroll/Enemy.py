@@ -4,7 +4,7 @@ from Start_up import*
 class Enemy(pygame.sprite.Sprite):
     # class to hold an enemy taking the random variables given in the game class
     # I realise I could create the variables here and pass nothing, in fact that's
-    # probabaly the next thing i will change
+    # probably the next thing i will change
     def __init__(self, pos, count, cos_sin_none, bounce_range, dx, counter):
         self.surface = pygame.Surface((20, 20))
         self.rect = self.surface.get_rect()
