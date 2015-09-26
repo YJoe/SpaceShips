@@ -1,6 +1,7 @@
 from Start_up import*
 from Upgrades import*
 from Stars import Star, create_stars
+from Settings import Settings
 
 # generic class to hold a menu state
 class GenericMenu(object):
@@ -111,8 +112,8 @@ class GenericMenu(object):
 class MainMenu(GenericMenu):
     def __init__(self):
         title = "Space Ships"
-        list = ["Play", "Info", "Quit"]
-        select_length = 150
+        list = ["Play", "Info", "Settings", "Quit"]
+        select_length = 200
         own_state = home_state
         # call the super class and pass the main menu information
         super(MainMenu, self).__init__(own_state, title, list, select_length)
@@ -128,6 +129,8 @@ class MainMenu(GenericMenu):
                     if self.selected == 1:
                         self.next_state = info_state
                     if self.selected == 2:
+                        self.next_state = settings_state
+                    if self.selected == 3:
                         self.next_state = quit_state
         super(MainMenu, self).input(event_list)
 
@@ -143,7 +146,7 @@ class InfoMenu(GenericMenu):
         self.info_text = ["Destroy enemies, earn money and upgrade your ship!",
                           "",
                           "Arrow keys to move up and down",
-                          "Space bar to bar to shoot",
+                          "Space bar to shoot",
                           "ESC to pause and exit menu",
                           "",
                           "Created by Joe Pauley",
@@ -162,7 +165,6 @@ class InfoMenu(GenericMenu):
         super(InfoMenu, self).display_all()
         for i in range(0, len(self.info_text)):
             main_s.blit(menu_font.render(self.info_text[i], True, main_theme), (self.list_start[0], self.list_start[1] + (i * 30)))
-
 
 
 class InGameMain(GenericMenu):
@@ -196,6 +198,19 @@ class InGameMain(GenericMenu):
 
 class Shop(GenericMenu):
     def __init__(self, player):
+        list = ["Speed", "Fire Rate", "Fire Power", "Coin Collection"]
+        title = "Shop"
+        rect_leng = width
+        own_state = shop_state
+        # call the super constructor passing the shop  information
+        super(Shop, self).__init__(own_state, title, list, rect_leng)
+        # create some extra object variables to hold palyer information and position
+        self.player = player
+        self.upgrades_list_pos = (350, self.list_start[1])
+        self.price_list_pos = (650, self.list_start[1])
+        self.selected_info = ""
+
+    def reset(self, player):
         list = ["Speed", "Fire Rate", "Fire Power", "Coin Collection"]
         title = "Shop"
         rect_leng = width
@@ -305,3 +320,92 @@ class Shop(GenericMenu):
         self.info_update()
         # return the next state of the object (returned by the super class run function)
         return super(Shop, self).run(event_list)
+
+
+class SettingsMenu(GenericMenu):
+    def __init__(self):
+        title = "Settings"
+        options_list = ["Enemy Rate", "Enemy Health", "Particle Effects"]
+        own_state = settings_state
+        select_length = width
+        super(SettingsMenu, self).__init__(own_state, title, options_list, select_length)
+        self.changes_made = False
+        self.selected_info = ""
+        self.settings_list_pos = (650, self.list_start[1])
+        self.settings_text = [str(settings.settings[0]) + " of " + str(len(settings.enemy_chance)),
+                              str(settings.settings[1]) + " of " + str(len(settings.enemy_health_max)),
+                              str(settings.settings[2]) + " of " + str(len(settings.enemy_particles))]
+
+    def update_print_info(self):
+        self.settings_text = [str(settings.settings[0]) + " of " + str(len(settings.enemy_chance)),
+                              str(settings.settings[1]) + " of " + str(len(settings.enemy_health_max)),
+                              str(settings.settings[2]) + " of " + str(len(settings.enemy_particles))]
+
+    def print_settings(self):
+        for i in range(0, len(self.settings_text)):
+            if self.selected == i:
+                main_s.blit(menu_font.render(self.settings_text[i], True, (255, 255, 255)),
+                            (self.settings_list_pos[0], self.settings_list_pos[1] + (self.list_space * i)))
+            else:
+                main_s.blit(menu_font.render(self.settings_text[i], True, main_theme),
+                            (self.settings_list_pos[0], self.settings_list_pos[1] + (self.list_space * i)))
+
+    def input(self, event_list):
+        # supersede the super class input function
+        for event in event_list:
+            if event.type == pygame.KEYDOWN:
+                self.selected_info = ""
+                if event.key == pygame.K_ESCAPE:
+                    self.next_state = home_state
+                    # write the new settings to the settings file
+                    # ready to be loaded the next time the user plays
+                    settings.write_settings()
+
+                if event.key == pygame.K_RIGHT:
+                    # ensure the new list position is within the upper
+                    # range of the list itself
+                    if settings.settings[self.selected] + 1 < settings.list_lengths[self.selected] + 1:
+                        settings.settings[self.selected] += 1
+                        self.update_print_info()
+                        settings.reload_settings()
+                    else:
+                        self.selected_info = "It can't get tougher!"
+
+                if event.key == pygame.K_LEFT:
+                    if settings.settings[self.selected] - 1 > 0:
+                        settings.settings[self.selected] -= 1
+                        self.update_print_info()
+                        settings.reload_settings()
+                    else:
+                        self.selected_info = "It can't get easier!"
+        super(SettingsMenu, self).input(event_list)
+
+    def display_all(self):
+        super(SettingsMenu, self).display_all()
+        self.print_settings()
+        main_s.blit(menu_font.render(self.selected_info, True, (0, 100, 100)), (50, 400))
+        #print other menu stuff here
+
+
+class GameOver(GenericMenu):
+    def __init__(self):
+        title = "Game Over!"
+        options_list = ["Restart Game", "Quit To Main", "Quit Game"]
+        own_state = game_over_state
+        select_length = width
+        super(GameOver, self).__init__(own_state, title, options_list, select_length)
+
+    def input(self, event_list):
+        # supersede the input of the super class
+        for event in event_list:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    # set next state to the option selected
+                    if self.selected == 0:
+                        self.next_state = reset_game_state
+                    elif self.selected == 1:
+                        self.next_state = home_state
+                    elif self.selected == 2:
+                        self.next_state = quit_state
+
+        super(GameOver, self).input(event_list)
