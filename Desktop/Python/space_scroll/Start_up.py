@@ -1,6 +1,7 @@
 import pygame
 import random
 import math
+from Settings import Settings
 pygame.init()
 clock = pygame.time.Clock()
 
@@ -14,20 +15,22 @@ info_state = 2
 game_state = 3
 pause_state = 4
 shop_state = 5
-quit_state = 6
+settings_state = 6
+quit_state = 7
+game_over_state = 8
+reset_game_state = 9
 
 # colours used
 main_theme = (0, 100, 100)
 red = (100, 0, 0)
+white = (255, 255, 255)
 
 # game settings
+settings = Settings()
 show_notes = True
 star_chance = 10  # chance of a star is 1 in 10 every update
 initial_stars = 100  # create 100 stars to fill the screen
 package_chance = 10  # chance of a package drop is 1 in 10 every enemy kill
-enemy_chance = 200  # chance of an enemy is 1 in 200 every update
-enemy_health_max = 3  # limit this to 4 as i have only added 4 colours to the enemy class (add more in enemy class)
-particle_count = 20  # amount of particles created when an enemy is killed
 # if your game runs slow, set particle count low and star chance higher
 # all particles, stars, enemies and bullets are removed when they leave the screen
 
