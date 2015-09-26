@@ -1,5 +1,5 @@
 from Start_up import*
-from Player import Player
+from Player import Player, HealthBar
 from Bullet import Bullet
 from Enemy import Enemy
 from Stopper import Stopper
@@ -29,6 +29,24 @@ class Game:
         self.info_bar = pygame.Surface((width, 30))
         self.info_bar.fill(main_theme)
         self.info_bar.set_alpha(100)
+        self.health_bar = HealthBar(self.player)
+        self.note_controller = NoteController((width - 10, 40))
+
+    def reset(self, play):
+        self.own_state = game_state
+        self.next_state = self.own_state
+        self.player = play
+        self.health_bar = HealthBar(self.player)
+        self.enemy_id_tracker = 0
+        self.bullet_list = []
+        self.enemy_list = []
+        self.kill_list = []
+        self.particle_list = []
+        self.package_list = []
+        self.to_update = []
+        self.to_display = []
+        self.to_text = []
+        self.star_list = create_stars("game")
         self.note_controller = NoteController((width - 10, 40))
 
     def update_all(self):
@@ -42,7 +60,7 @@ class Game:
             elif isinstance(self.to_update[x], Enemy):
                 self.to_update[x].update(self.bullet_list)
             elif isinstance(self.to_update[x], Player):
-                self.to_update[x].update(self.package_list, self.note_controller)
+                self.to_update[x].update(self.package_list, self.note_controller, self.bullet_list)
             elif isinstance(self.to_update[x], Bullet):
                 self.to_update[x].update()
             elif isinstance(self.to_update[x], Package):
@@ -51,12 +69,18 @@ class Game:
                 self.to_update[x].update()
             elif isinstance(self.to_update[x], Stopper):
                 self.to_update[x].update(self.bullet_list, self.enemy_list, self.player, self.note_controller)
+            elif isinstance(self.to_update[x], HealthBar):
+                self.to_update[x].update()
 
     def display_all(self):
         # fill screen with black and display all game information
         main_s.fill((20, 20, 20))
         for x in range(0, len(self.to_display)):
-            self.to_display[x].display()
+            if isinstance(self.to_display[x], Player):
+                if self.to_display[x].alive:
+                    self.to_display[x].display()
+            else:
+                self.to_display[x].display()
         main_s.blit(self.info_bar, (0, 0))
         main_s.blit(font.render("ESC TO PAUSE", True, (255, 255, 255)), (width - 115, 5))
 
@@ -67,12 +91,11 @@ class Game:
             main_s.blit(font.render(str(self.to_text[x]), True, (255, 255, 255)), (5 + (15 * total_length), 5))
             total_length += len(self.to_text[x])
 
-    def hit_particles(self, rect_hit):
+    def hit_particles(self, rect_hit, colour):
         # create particles with random speeds, directions and sizes
-        to_create = particle_count
         numbers_z = range(-10, 10)
         numbers_nz = range(-10, -1) + range(1, 10)
-        for x in range(0, to_create):
+        for x in range(0, settings.loaded_enemy_particles):
             x_temp = random.choice(numbers_z)
             y_temp = random.choice(numbers_z)
 
@@ -90,7 +113,7 @@ class Game:
                 dy = random.choice(numbers_nz)
                 dx = random.choice(numbers_nz)
 
-            particle = Particle(random.randint(1, 3), (dx, dy), rect_hit)
+            particle = Particle(random.randint(1, 3), (dx, dy), rect_hit, colour)
             self.particle_list.append(particle)
 
     def remove_particles(self):
@@ -135,7 +158,7 @@ class Game:
                         del self.kill_list[len(self.kill_list) - x - 1]
                         self.note_controller.add_note("+ " + str(self.enemy_list[len(self.enemy_list) - y - 1].money * self.player.money_collection) + " coins", main_theme)
                         self.player.get_coins(self.enemy_list[len(self.enemy_list) - y - 1].money)
-                        self.hit_particles(self.enemy_list[len(self.enemy_list) - y - 1].rect)
+                        self.hit_particles(self.enemy_list[len(self.enemy_list) - y - 1].rect, white)
                         self.random_event_package(self.enemy_list[len(self.enemy_list) - y - 1].dx,
                                                   self.enemy_list[len(self.enemy_list) - y - 1].rect.center)
                         del self.enemy_list[len(self.enemy_list) - y - 1]
@@ -145,8 +168,8 @@ class Game:
 
     def random_event_enemy(self):
         # create an enemy if the random variable is 1
-        if random.randint(1, enemy_chance) == 1:
-            enemy = Enemy((width, height/2), self.enemy_id_tracker, random.randint(0, 2), random.randint(2, 7), random.randint(1, 2), random.randint(0, 1))
+        if random.randint(1, settings.loaded_enemy_chance) == 1:
+            enemy = Enemy(self.enemy_id_tracker)
             self.enemy_list.append(enemy)
             self.enemy_id_tracker += 1
 
@@ -191,13 +214,16 @@ class Game:
         self.remove_stars()
         # reload all lists
         self.to_display = self.package_list + self.star_list + self.bullet_list + self.enemy_list + \
-                          self.particle_list + [self.player, self.note_controller]
-        self.to_update = [self.player, self.note_controller, self.left_stop, self.right_stop] + self.package_list + self.star_list + \
-                          self.bullet_list + self.enemy_list + self.particle_list
-        self.to_text = [str(self.player.money) + " COINS",
-                        str(self.player.bullets_used) + " BULLETS USED",
-                        str(self.left_stop.enemies_collided) + " ENEMIES PASSED"]
-
+                          self.particle_list + [self.player, self.note_controller, self.health_bar]
+        self.to_update = [self.player, self.note_controller, self.left_stop, self.right_stop] + \
+                          self.package_list + self.star_list + self.bullet_list + self.enemy_list + self.particle_list
+        self.to_text = [str(self.player.money) + " COINS"]
+        if not self.player.alive:
+            self.hit_particles(self.player.rect, main_theme)
+            self.next_state = game_over_state
+        if self.player.hit:
+            self.health_bar.update_health()
+            self.hit_particles(self.player.rect, main_theme)
         self.update_all()
         self.display_all()
         self.text_all()
