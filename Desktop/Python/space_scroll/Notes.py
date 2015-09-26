@@ -7,8 +7,6 @@ class NoteController:
         self.note_space = self.note_height + 10
         self.start_pos = start_pos
         self.note_list = []
-        self.remove_note_after = 60  # 60 updates (one second)
-        self.update_counter = 0
 
     def add_note(self, text, colour):
         # create a new note and add it to the list of notes
@@ -29,13 +27,13 @@ class NoteController:
         # only if there are notes in the list add to the counter
         # and check if the oldest card is out of time
         if len(self.note_list):
-            self.update_counter += 1
-            if self.update_counter > self.remove_note_after:
+            if self.note_list[0].time < 1:
                 self.delete_oldest()
-                self.update_counter = 0
 
     def update(self):
         self.check_time()
+        for i in range(0, len(self.note_list)):
+            self.note_list[i].update()
 
 
 class Notification:
@@ -47,6 +45,11 @@ class Notification:
         self.surface = pygame.Surface((10 * len(self.text), self.note_height))
         self.surface.fill(colour)
         self.surface.set_alpha(100)
+        # create a deterioration time for the note (100 updates)
+        self.time = 100
+
+    def update(self):
+        self.time -= 1
 
     def display(self, note_pos):
         # display the note rect and text
