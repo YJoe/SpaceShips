@@ -1,0 +1,7 @@
+# Space Ships - settings file
+# enemy rate (1-7)
+2
+# enemy max health (1-4)
+2
+# particles (1-7)
+5
