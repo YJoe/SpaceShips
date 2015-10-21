@@ -21,3 +21,13 @@ newest updates include:
     roughly 1.5 seconds, this change has been made due to notes
     stacking up and not leaving the screen for a long time when
     many enimies are killed at once.
+
+Even more updates(21/10/2015):
+- The player can now buy health from the shop for a pretty low
+  price right now so that might change to make it a little
+  more difficult
+- Enemies will now have a random chance of dropping a health pack
+  which the player can collect, health packs are green and the 
+  upgrade packs are blue
+
+
