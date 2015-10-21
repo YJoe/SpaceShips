@@ -197,8 +197,8 @@ class InGameMain(GenericMenu):
 
 
 class Shop(GenericMenu):
-    def __init__(self, player):
-        list = ["Speed", "Fire Rate", "Fire Power", "Coin Collection"]
+    def __init__(self, player, health_bar):
+        list = ["Speed", "Fire Rate", "Fire Power", "Coin Collection", "Restore 1 Health"]
         title = "Shop"
         rect_leng = width
         own_state = shop_state
@@ -206,12 +206,13 @@ class Shop(GenericMenu):
         super(Shop, self).__init__(own_state, title, list, rect_leng)
         # create some extra object variables to hold palyer information and position
         self.player = player
+        self.health_bar = health_bar
         self.upgrades_list_pos = (350, self.list_start[1])
         self.price_list_pos = (650, self.list_start[1])
         self.selected_info = ""
 
-    def reset(self, player):
-        list = ["Speed", "Fire Rate", "Fire Power", "Coin Collection"]
+    def reset(self, player, health_bar):
+        list = ["Speed", "Fire Rate", "Fire Power", "Coin Collection", "Restore 1 Health"]
         title = "Shop"
         rect_leng = width
         own_state = shop_state
@@ -219,6 +220,7 @@ class Shop(GenericMenu):
         super(Shop, self).__init__(own_state, title, list, rect_leng)
         # create some extra object variables to hold palyer information and position
         self.player = player
+        self.health_bar = health_bar
         self.upgrades_list_pos = (350, self.list_start[1])
         self.price_list_pos = (650, self.list_start[1])
         self.selected_info = ""
@@ -279,7 +281,17 @@ class Shop(GenericMenu):
                     self.selected_info = "MAX LEVEL REACHED"
             else:
                 self.selected_info = "YOU DO NOT HAVE ENOUGH COINS"
-
+        elif self.selected == 4:
+            if self.player.money >= 30:
+                if self.player.health < 10:
+                    self.player.health += 1
+                    self.player.health_update = True
+                    self.player.money -= 30
+                    self.selected_info = "SOME PLAYER HEALTH WAS RESTORED"
+                else:
+                    self.selected_info = "PLAYER HEALTH IS AT MAX"
+            else:
+                self.selected_info = "YOU DO NOT HAVE ENOUGH COINS"
         # update the players stats
         self.player.reload_upgrades()
 
