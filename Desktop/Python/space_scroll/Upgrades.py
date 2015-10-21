@@ -15,4 +15,5 @@ package_items = ["SU",
                  "GSU",
                  "GPU",
                  "MCU",
-                 "M"]
+                 "M",
+                 "H"]
