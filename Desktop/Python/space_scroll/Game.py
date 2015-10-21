@@ -5,12 +5,12 @@ from Enemy import Enemy
 from Stopper import Stopper
 from Particle import Particle
 from Stars import Star, create_stars
-from Package import Package
+from Package import EnemyDrop, HealthPack
 from Notes import NoteController
 
 
 class Game:
-    def __init__(self, play):
+    def __init__(self, play, health_bar):
         self.own_state = game_state
         self.next_state = self.own_state
         self.player = play
@@ -29,7 +29,7 @@ class Game:
         self.info_bar = pygame.Surface((width, 30))
         self.info_bar.fill(main_theme)
         self.info_bar.set_alpha(100)
-        self.health_bar = HealthBar(self.player)
+        self.health_bar = health_bar
         self.note_controller = NoteController((width - 10, 40))
 
     def reset(self, play):
@@ -60,10 +60,12 @@ class Game:
             elif isinstance(self.to_update[x], Enemy):
                 self.to_update[x].update(self.bullet_list)
             elif isinstance(self.to_update[x], Player):
-                self.to_update[x].update(self.package_list, self.note_controller, self.bullet_list)
+                self.to_update[x].update(self.package_list, self.note_controller, self.bullet_list, self.health_bar)
             elif isinstance(self.to_update[x], Bullet):
                 self.to_update[x].update()
-            elif isinstance(self.to_update[x], Package):
+            elif isinstance(self.to_update[x], EnemyDrop):
+                self.to_update[x].update()
+            elif isinstance(self.to_update[x], HealthPack):
                 self.to_update[x].update()
             elif isinstance(self.to_update[x], NoteController):
                 self.to_update[x].update()
@@ -140,6 +142,16 @@ class Game:
                 # break in case [len(p_list) - x - 1] is out of range
                 break
 
+    def remove_packages(self):
+        print(len(self.package_list))
+        for i in range(0, len(self.package_list)):
+            try:
+                if not pygame.sprite.collide_rect(screen_rect, self.package_list[len(self.package_list) - i - 1]):
+                    del self.package_list[len(self.package_list) - i - 1]
+            except IndexError:
+                # break in case [len(p_list) - x - 1] is out of range
+                break
+
     def check_enemy_alive(self):
         # add enemies to a removal list if they are dead
         for x in range(0, len(self.enemy_list)):
@@ -159,7 +171,7 @@ class Game:
                         self.note_controller.add_note("+ " + str(self.enemy_list[len(self.enemy_list) - y - 1].money * self.player.money_collection) + " coins", main_theme)
                         self.player.get_coins(self.enemy_list[len(self.enemy_list) - y - 1].money)
                         self.hit_particles(self.enemy_list[len(self.enemy_list) - y - 1].rect, white)
-                        self.random_event_package(self.enemy_list[len(self.enemy_list) - y - 1].dx,
+                        self.random_enemy_drop(self.enemy_list[len(self.enemy_list) - y - 1].dx,
                                                   self.enemy_list[len(self.enemy_list) - y - 1].rect.center)
                         del self.enemy_list[len(self.enemy_list) - y - 1]
                         break
@@ -182,11 +194,18 @@ class Game:
                      0)                          # dy
             self.star_list.append(s)
 
-    def random_event_package(self, speed, pos):
+    def random_enemy_drop(self, speed, pos):
         # random chance that package will be created
         if random.randint(1, package_chance) == 1:
-            p = Package(speed, pos)
-            self.package_list.append(p)
+            e = EnemyDrop(speed, pos)
+            self.package_list.append(e)
+
+    def random_health_pack(self):
+        pos = (width + 10, random.randint(20, height - 20))
+        # random chance that package will be created
+        if random.randint(1, package_chance * 50) == 1:
+            h = HealthPack(-random.randint(1, 2), pos)
+            self.package_list.append(h)
 
     def input(self, event_list):
         # player input
@@ -208,10 +227,12 @@ class Game:
         self.input(event_list)
         self.random_event_enemy()
         self.random_event_star()
+        self.random_health_pack()
         self.check_enemy_alive()
         self.kill_enemies()
         self.remove_particles()
         self.remove_stars()
+        #self.remove_packages()
         # reload all lists
         self.to_display = self.package_list + self.star_list + self.bullet_list + self.enemy_list + \
                           self.particle_list + [self.player, self.note_controller, self.health_bar]
@@ -224,9 +245,13 @@ class Game:
         if self.player.hit:
             self.health_bar.update_health()
             self.hit_particles(self.player.rect, main_theme)
+        if self.player.health_update:
+            self.health_bar.update_health()
+            self.player.health_update = False
         self.update_all()
         self.display_all()
         self.text_all()
+        #print(len(self.package_list))
 
         # by default return the games own state value
         # otherwise this will be changed in the user input
