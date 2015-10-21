@@ -1,15 +1,16 @@
 from Start_up import*
 from Player import Player
 from Menu import InGameMain, MainMenu, Shop, InfoMenu, SettingsMenu, GameOver
-from Game import Game
+from Game import Game, HealthBar
 
 # create all state objects
 player = Player()
 home = MainMenu()
 info = InfoMenu()
-game = Game(player)
+health_bar = HealthBar(player)
+game = Game(player, health_bar)
 paused = InGameMain()
-shop = Shop(player)
+shop = Shop(player, health_bar)
 settings = SettingsMenu()
 game_over = GameOver()
 
@@ -38,8 +39,9 @@ while running:
     if state == home_state:
         state = home.run(event_list)
         player.reset()
+        health_bar.reset(player)
         game.reset(player)
-        shop.reset(player)
+        shop.reset(player, health_bar)
     elif state == info_state:
         state = info.run(event_list)
     elif state == game_state:
