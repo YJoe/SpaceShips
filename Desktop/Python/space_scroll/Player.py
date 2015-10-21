@@ -13,7 +13,13 @@ class HealthBar:
         self.bar_back = pygame.Surface((21 * self.player.health, 20))
         self.bar_back.fill((50, 50, 50))
 
+    def reset(self, player):
+        self.player = player
+        self.bar = pygame.Surface((20 * self.player.health, 10))
+        self.bar.fill((0, 255, 0))
+
     def update_health(self):
+        print("update")
         self.bar = pygame.Surface((20 * self.player.health, 10))
         self.bar.fill((0, 255, 0))
 
@@ -37,6 +43,7 @@ class Player(pygame.sprite.Sprite):
         self.health = 10
         self.alive = True
         self.hit = False
+        self.health_update = False
 
         self.s_upgrade = 0
         self.m_upgrade = 0
@@ -95,7 +102,6 @@ class Player(pygame.sprite.Sprite):
                     # off of the power of the players bullets
                     self.health -= 1
                     self.hit = True
-                    print(self.health)
                     if self.health == 0:
                         self.alive = False
                     # if the enemy will still be alive set its new colour based off of
@@ -126,13 +132,14 @@ class Player(pygame.sprite.Sprite):
                 self.cool = True
                 self.cool_counter = 0
 
-    def collect_package(self, item, note_controller):
+    def collect_package(self, item, note_controller, health_bar):
         # determine the package picked up:
         # SU = Speed Upgrade
         # GSU = Gun Speed Upgrade
         # GPU = Gun Power Upgrade
         # MCU = Money Collection Upgrade
         # M = Money
+        # H = Health
         # then check that the player does not have the max amount of upgrades
         # if no then add the upgrade and reload the player stats
         # create relevant notes to display
@@ -164,19 +171,27 @@ class Player(pygame.sprite.Sprite):
             random_amount = random.randint(10, 50)
             note_controller.add_note("+ " + str(random_amount * self.money_collection) + " coins", main_theme)
             self.money += random_amount
+        elif item == "H":
+            if self.health < 10:
+                self.health += 1
+                note_controller.add_note("1 health point restored", main_theme)
+                health_bar.update_health ()
+
+            else:
+                note_controller.add_note("Health is at max", main_theme)
 
         self.reload_upgrades()
 
-    def check_package_collide(self, package_list, note_controller):
+    def check_package_collide(self, package_list, note_controller, health_bar):
         # check if a package collides with the player and remove it from the package_list
         for i in range(0, len(package_list)):
             if pygame.sprite.collide_rect(self, package_list[len(package_list) - i - 1]):
-                self.collect_package(package_list[len(package_list) - i - 1].holds, note_controller)
+                self.collect_package(package_list[len(package_list) - i - 1].holds, note_controller, health_bar)
                 del package_list[len(package_list) - i - 1]
 
-    def update(self, package_list, note_controller, bullet_list):
+    def update(self, package_list, note_controller, bullet_list, health_bar):
         # update the player object
-        self.check_package_collide(package_list, note_controller)
+        self.check_package_collide(package_list, note_controller, health_bar)
         self.check_cool_down()
         self.check_collide(bullet_list)
         if self.money < 0:
@@ -186,3 +201,4 @@ class Player(pygame.sprite.Sprite):
 
     def display(self):
         main_s.blit(self.surface, (self.rect.x, self.rect.y))
+
